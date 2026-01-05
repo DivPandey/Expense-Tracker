@@ -9,12 +9,13 @@ import {
     Alert,
     ActivityIndicator
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { CATEGORIES } from '../constants/categories';
 
 const BudgetScreen = () => {
-    const { logout } = useAuth();
+    const { colors } = useTheme();
     const [budgets, setBudgets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -70,21 +71,12 @@ const BudgetScreen = () => {
         return budgets.find(b => b.category === categoryId);
     };
 
-    const handleLogout = () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', style: 'destructive', onPress: logout }
-            ]
-        );
-    };
+    const styles = createStyles(colors);
 
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4CAF50" />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
@@ -100,7 +92,7 @@ const BudgetScreen = () => {
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.infoCard}>
-                    <Text style={styles.infoIcon}>💡</Text>
+                    <MaterialIcons name="lightbulb" size={24} color="#FFC107" style={styles.infoIcon} />
                     <Text style={styles.infoText}>
                         Set monthly spending limits for each category. You'll get alerts when approaching or exceeding limits.
                     </Text>
@@ -115,7 +107,7 @@ const BudgetScreen = () => {
                             <View key={category.id} style={styles.budgetItem}>
                                 <View style={styles.categoryRow}>
                                     <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-                                        <Text style={styles.categoryEmoji}>{category.icon}</Text>
+                                        <MaterialIcons name={category.icon} size={24} color={category.color} />
                                     </View>
                                     <View style={styles.categoryInfo}>
                                         <Text style={styles.categoryName}>{category.label}</Text>
@@ -131,6 +123,7 @@ const BudgetScreen = () => {
                                             <TextInput
                                                 style={styles.editInput}
                                                 placeholder="Amount"
+                                                placeholderTextColor={colors.textMuted}
                                                 value={editValue}
                                                 onChangeText={setEditValue}
                                                 keyboardType="decimal-pad"
@@ -174,29 +167,25 @@ const BudgetScreen = () => {
                     })}
                 </View>
 
-                {/* Logout Button */}
-                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                    <Text style={styles.logoutBtnText}>🚪 Logout</Text>
-                </TouchableOpacity>
-
                 <View style={{ height: 100 }} />
             </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: colors.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
         paddingTop: 60,
         paddingBottom: 24,
         paddingHorizontal: 20,
@@ -204,11 +193,11 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
     },
     subtitle: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
         marginTop: 4,
     },
     content: {
@@ -217,7 +206,7 @@ const styles = StyleSheet.create({
     },
     infoCard: {
         flexDirection: 'row',
-        backgroundColor: '#e3f2fd',
+        backgroundColor: colors.info + '20',
         borderRadius: 12,
         padding: 16,
         marginBottom: 20,
@@ -229,17 +218,17 @@ const styles = StyleSheet.create({
     infoText: {
         flex: 1,
         fontSize: 14,
-        color: '#1565c0',
+        color: colors.info,
         lineHeight: 20,
     },
     budgetList: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderRadius: 16,
         overflow: 'hidden',
     },
     budgetItem: {
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: colors.border,
     },
     categoryRow: {
         flexDirection: 'row',
@@ -263,22 +252,22 @@ const styles = StyleSheet.create({
     categoryName: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     budgetAmount: {
         fontSize: 13,
-        color: '#4CAF50',
+        color: colors.primary,
         marginTop: 2,
     },
     setBtn: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 8,
     },
     setBtnText: {
         fontSize: 14,
-        color: '#666',
+        color: colors.textSecondary,
         fontWeight: '500',
     },
     editContainer: {
@@ -286,16 +275,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     editInput: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
         width: 100,
         fontSize: 14,
         marginRight: 8,
+        color: colors.text,
     },
     saveBtn: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
         width: 36,
         height: 36,
         borderRadius: 8,
@@ -308,7 +298,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     cancelBtn: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         width: 36,
         height: 36,
         borderRadius: 8,
@@ -316,23 +306,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelBtnText: {
-        color: '#999',
+        color: colors.textMuted,
         fontSize: 18,
-    },
-    logoutBtn: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
-        marginTop: 24,
-        borderWidth: 1,
-        borderColor: '#e74c3c',
-    },
-    logoutBtnText: {
-        fontSize: 16,
-        color: '#e74c3c',
-        fontWeight: '500',
     },
 });
 
 export default BudgetScreen;
+

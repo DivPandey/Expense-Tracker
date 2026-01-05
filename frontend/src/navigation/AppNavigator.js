@@ -1,10 +1,12 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet, Platform } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -14,18 +16,36 @@ import ExpenseListScreen from '../screens/ExpenseListScreen';
 import AddExpenseScreen from '../screens/AddExpenseScreen';
 import InsightsScreen from '../screens/InsightsScreen';
 import BudgetScreen from '../screens/BudgetScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import TemplatesScreen from '../screens/TemplatesScreen';
+import ExportScreen from '../screens/ExportScreen';
+import GoalsScreen from '../screens/GoalsScreen';
+import GroupsScreen from '../screens/GroupsScreen';
+import GroupDetailScreen from '../screens/GroupDetailScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Modern Tab Icon Component - Myntra/Zepto style
-const TabIcon = ({ icon, label, focused }) => (
+// Modern Tab Icon Component with Material Icons
+const TabIcon = ({ icon, label, focused, colors }) => (
     <View style={styles.tabItem}>
-        <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
-            <Text style={styles.tabIcon}>{icon}</Text>
+        <View style={[
+            styles.iconWrapper,
+            focused && { backgroundColor: `${colors.primary}20` }
+        ]}>
+            <MaterialIcons
+                name={icon}
+                size={24}
+                color={focused ? colors.primary : colors.textSecondary}
+            />
         </View>
         <Text
-            style={[styles.tabLabel, focused && styles.tabLabelActive]}
+            style={[
+                styles.tabLabel,
+                { color: focused ? colors.primary : colors.textSecondary }
+            ]}
             numberOfLines={1}
         >
             {label}
@@ -34,11 +54,17 @@ const TabIcon = ({ icon, label, focused }) => (
 );
 
 const MainTabs = () => {
+    const { colors } = useTheme();
+
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: styles.tabBar,
+                tabBarStyle: {
+                    ...styles.tabBar,
+                    backgroundColor: colors.surface,
+                    borderTopColor: colors.border,
+                },
                 tabBarShowLabel: false,
                 tabBarHideOnKeyboard: true,
             }}
@@ -48,25 +74,25 @@ const MainTabs = () => {
                 component={HomeScreen}
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="🏠" label="Home" focused={focused} />
+                        <TabIcon icon="home" label="Home" focused={focused} colors={colors} />
                     ),
                 }}
             />
             <Tab.Screen
-                name="Expenses"
+                name="History"
                 component={ExpenseListScreen}
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="📋" label="History" focused={focused} />
+                        <TabIcon icon="receipt-long" label="History" focused={focused} colors={colors} />
                     ),
                 }}
             />
             <Tab.Screen
-                name="Insights"
+                name="Stats"
                 component={InsightsScreen}
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="📊" label="Stats" focused={focused} />
+                        <TabIcon icon="bar-chart" label="Stats" focused={focused} colors={colors} />
                     ),
                 }}
             />
@@ -75,7 +101,25 @@ const MainTabs = () => {
                 component={BudgetScreen}
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="⚙️" label="Settings" focused={focused} />
+                        <TabIcon icon="account-balance-wallet" label="Budget" focused={focused} colors={colors} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Goals"
+                component={GoalsScreen}
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon icon="flag" label="Goals" focused={focused} colors={colors} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon icon="settings" label="Settings" focused={focused} colors={colors} />
                     ),
                 }}
             />
@@ -84,6 +128,8 @@ const MainTabs = () => {
 };
 
 const AuthStack = () => {
+    const { colors } = useTheme();
+
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -103,23 +149,70 @@ const AppStack = () => {
                     presentation: 'modal',
                 }}
             />
+            <Stack.Screen
+                name="Templates"
+                component={TemplatesScreen}
+                options={{
+                    presentation: 'modal',
+                }}
+            />
+            <Stack.Screen
+                name="Export"
+                component={ExportScreen}
+                options={{
+                    presentation: 'modal',
+                }}
+            />
+            <Stack.Screen
+                name="Groups"
+                component={GroupsScreen}
+                options={{
+                    presentation: 'modal',
+                }}
+            />
+            <Stack.Screen
+                name="GroupDetail"
+                component={GroupDetailScreen}
+            />
+            <Stack.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+                options={{
+                    presentation: 'modal',
+                }}
+            />
         </Stack.Navigator>
     );
 };
 
+
 const AppNavigator = () => {
     const { isAuthenticated, loading } = useAuth();
+    const { colors, isDarkMode } = useTheme();
+
+    // Create custom navigation theme
+    const navigationTheme = {
+        ...(isDarkMode ? DarkTheme : DefaultTheme),
+        colors: {
+            ...(isDarkMode ? DarkTheme.colors : DefaultTheme.colors),
+            background: colors.background,
+            card: colors.surface,
+            text: colors.text,
+            border: colors.border,
+            primary: colors.primary,
+        },
+    };
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, { backgroundColor: colors.header }]}>
                 <Text style={styles.loadingText}>💰</Text>
             </View>
         );
     }
 
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={navigationTheme}>
             {isAuthenticated ? <AppStack /> : <AuthStack />}
         </NavigationContainer>
     );
@@ -130,7 +223,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#1a1a2e',
     },
     loadingText: {
         fontSize: 64,
@@ -140,9 +232,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#ffffff',
         borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
         height: Platform.OS === 'ios' ? 85 : 65,
         paddingTop: 8,
         paddingBottom: Platform.OS === 'ios' ? 25 : 8,
@@ -156,8 +246,8 @@ const styles = StyleSheet.create({
     tabItem: {
         alignItems: 'center',
         justifyContent: 'center',
-        minWidth: 60,
-        paddingHorizontal: 4,
+        minWidth: 50,
+        paddingHorizontal: 2,
     },
     iconWrapper: {
         width: 36,
@@ -167,24 +257,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 2,
     },
-    iconWrapperActive: {
-        backgroundColor: 'rgba(76, 175, 80, 0.15)',
-    },
     tabIcon: {
-        fontSize: 20,
+        fontSize: 18,
     },
     tabLabel: {
         fontSize: 10,
         fontWeight: '500',
-        color: '#999',
         textAlign: 'center',
         letterSpacing: 0.2,
-    },
-    tabLabelActive: {
-        color: '#4CAF50',
-        fontWeight: '700',
     },
 });
 
 export default AppNavigator;
+
 

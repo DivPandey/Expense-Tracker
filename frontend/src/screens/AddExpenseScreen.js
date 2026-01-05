@@ -10,13 +10,17 @@ import {
     ActivityIndicator,
     Platform
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useExpenses } from '../context/ExpenseContext';
+import { useTheme } from '../context/ThemeContext';
 import CategoryPicker from '../components/CategoryPicker';
 import { PAYMENT_METHODS } from '../constants/categories';
+import api from '../api/axios';
 
 const AddExpenseScreen = ({ navigation, route }) => {
     const { addExpense, updateExpense, isOnline } = useExpenses();
+    const { colors } = useTheme();
     const existingExpense = route.params?.expense;
     const isEditing = !!existingExpense;
 
@@ -78,12 +82,52 @@ const AddExpenseScreen = ({ navigation, route }) => {
         }
     };
 
+    const handleSaveAsTemplate = () => {
+        if (!amount || parseFloat(amount) <= 0) {
+            Alert.alert('Error', 'Please enter a valid amount to save as template');
+            return;
+        }
+
+        Alert.prompt(
+            'Save as Template',
+            'Enter a name for this template (e.g., "Daily Coffee")',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Save',
+                    onPress: async (templateName) => {
+                        if (!templateName?.trim()) {
+                            Alert.alert('Error', 'Please enter a template name');
+                            return;
+                        }
+                        try {
+                            await api.post('/templates', {
+                                name: templateName.trim(),
+                                amount: parseFloat(amount),
+                                category,
+                                paymentMethod,
+                                description: description.trim()
+                            });
+                            Alert.alert('Success', 'Template saved successfully!');
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to save template');
+                        }
+                    }
+                }
+            ],
+            'plain-text',
+            description || `${category} expense`
+        );
+    };
+
     const onDateChange = (event, selectedDate) => {
         setShowDatePicker(Platform.OS === 'ios');
         if (selectedDate) {
             setDate(selectedDate);
         }
     };
+
+    const styles = createStyles(colors);
 
     return (
         <View style={styles.container}>
@@ -108,7 +152,7 @@ const AddExpenseScreen = ({ navigation, route }) => {
                     <TextInput
                         style={styles.amountInput}
                         placeholder="0"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={amount}
                         onChangeText={setAmount}
                         keyboardType="decimal-pad"
@@ -123,24 +167,31 @@ const AddExpenseScreen = ({ navigation, route }) => {
                 <View style={styles.section}>
                     <Text style={styles.label}>Payment Method</Text>
                     <View style={styles.paymentMethods}>
-                        {PAYMENT_METHODS.map((method) => (
-                            <TouchableOpacity
-                                key={method.id}
-                                style={[
-                                    styles.paymentBtn,
-                                    paymentMethod === method.id && styles.paymentBtnActive
-                                ]}
-                                onPress={() => setPaymentMethod(method.id)}
-                            >
-                                <Text style={styles.paymentIcon}>{method.icon}</Text>
-                                <Text style={[
-                                    styles.paymentLabel,
-                                    paymentMethod === method.id && styles.paymentLabelActive
-                                ]}>
-                                    {method.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                        {PAYMENT_METHODS.map((method) => {
+                            const isActive = paymentMethod === method.id;
+                            return (
+                                <TouchableOpacity
+                                    key={method.id}
+                                    style={[
+                                        styles.paymentBtn,
+                                        isActive && styles.paymentBtnActive
+                                    ]}
+                                    onPress={() => setPaymentMethod(method.id)}
+                                >
+                                    <MaterialIcons
+                                        name={method.icon}
+                                        size={20}
+                                        color={isActive ? '#fff' : colors.textSecondary}
+                                    />
+                                    <Text style={[
+                                        styles.paymentLabel,
+                                        isActive && styles.paymentLabelActive
+                                    ]}>
+                                        {method.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 
@@ -150,7 +201,7 @@ const AddExpenseScreen = ({ navigation, route }) => {
                     <TextInput
                         style={styles.descriptionInput}
                         placeholder="What was this expense for?"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={description}
                         onChangeText={setDescription}
                         multiline
@@ -165,7 +216,7 @@ const AddExpenseScreen = ({ navigation, route }) => {
                         style={styles.dateBtn}
                         onPress={() => setShowDatePicker(true)}
                     >
-                        <Text style={styles.dateIcon}>📅</Text>
+                        <MaterialIcons name="calendar-today" size={20} color={colors.primary} style={styles.dateIcon} />
                         <Text style={styles.dateText}>
                             {date.toLocaleDateString('en-IN', {
                                 weekday: 'short',
@@ -202,16 +253,27 @@ const AddExpenseScreen = ({ navigation, route }) => {
                     )}
                 </TouchableOpacity>
 
+                {/* Save as Template Button */}
+                {!isEditing && (
+                    <TouchableOpacity
+                        style={styles.templateBtn}
+                        onPress={handleSaveAsTemplate}
+                    >
+                        <Text style={styles.templateBtnText}>📋 Save as Template</Text>
+                    </TouchableOpacity>
+                )}
+
                 <View style={{ height: 40 }} />
             </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -220,19 +282,19 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingBottom: 16,
         paddingHorizontal: 20,
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
     },
     cancelBtn: {
         fontSize: 16,
-        color: '#4CAF50',
+        color: colors.primary,
     },
     title: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#fff',
+        color: colors.headerText,
     },
     offlineBanner: {
-        backgroundColor: '#fff3cd',
+        backgroundColor: colors.warning,
         padding: 10,
         alignItems: 'center',
     },
@@ -250,19 +312,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 30,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: colors.border,
         marginBottom: 24,
     },
     currencySymbol: {
         fontSize: 40,
         fontWeight: '300',
-        color: '#1a1a2e',
+        color: colors.text,
         marginRight: 8,
     },
     amountInput: {
         fontSize: 48,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         minWidth: 100,
         textAlign: 'center',
     },
@@ -272,7 +334,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         marginBottom: 12,
     },
     paymentMethods: {
@@ -284,11 +346,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         marginHorizontal: 4,
     },
     paymentBtnActive: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
     },
     paymentIcon: {
         fontSize: 24,
@@ -296,25 +358,25 @@ const styles = StyleSheet.create({
     },
     paymentLabel: {
         fontSize: 12,
-        color: '#666',
+        color: colors.textSecondary,
     },
     paymentLabelActive: {
         color: '#fff',
         fontWeight: '600',
     },
     descriptionInput: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
-        color: '#333',
+        color: colors.text,
         minHeight: 80,
         textAlignVertical: 'top',
     },
     dateBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 12,
         padding: 16,
     },
@@ -324,23 +386,39 @@ const styles = StyleSheet.create({
     },
     dateText: {
         fontSize: 16,
-        color: '#333',
+        color: colors.text,
     },
     saveBtn: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
         borderRadius: 12,
         padding: 18,
         alignItems: 'center',
         marginTop: 24,
     },
     saveBtnDisabled: {
-        backgroundColor: '#aaa',
+        backgroundColor: colors.textMuted,
     },
     saveBtnText: {
         color: '#fff',
         fontSize: 18,
         fontWeight: '600',
     },
+    templateBtn: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: colors.primary,
+        borderRadius: 12,
+        padding: 14,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    templateBtnText: {
+        color: colors.primary,
+        fontSize: 16,
+        fontWeight: '500',
+    },
 });
 
 export default AddExpenseScreen;
+
+

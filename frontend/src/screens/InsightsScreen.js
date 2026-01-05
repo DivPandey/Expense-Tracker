@@ -5,23 +5,55 @@ import {
     StyleSheet,
     ScrollView,
     RefreshControl,
-    Dimensions
+    Dimensions,
+    TouchableOpacity,
+    Modal,
+    FlatList
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useExpenses } from '../context/ExpenseContext';
+import { useTheme } from '../context/ThemeContext';
 import InsightCard from '../components/InsightCard';
+import ExpenseCard from '../components/ExpenseCard';
 import { CATEGORIES } from '../constants/categories';
+
 
 const { width } = Dimensions.get('window');
 
-const InsightsScreen = () => {
-    const { insights, fetchInsights, loading } = useExpenses();
+const InsightsScreen = ({ navigation }) => {
+    const { insights, expenses, fetchInsights, loading } = useExpenses();
+    const { colors } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     const onRefresh = async () => {
         setRefreshing(true);
         await fetchInsights();
         setRefreshing(false);
     };
+
+    const handleCategoryPress = (category) => {
+        setSelectedCategory(category);
+        setModalVisible(true);
+    };
+
+    const getCategoryExpenses = () => {
+        if (!selectedCategory || !expenses) return [];
+
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        return expenses.filter(exp => {
+            const expDate = new Date(exp.date);
+            return exp.category === selectedCategory.id &&
+                expDate.getMonth() === currentMonth &&
+                expDate.getFullYear() === currentYear;
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    };
+
+    const filteredExpenses = getCategoryExpenses();
 
     const currentMonth = insights?.currentMonth;
     const previousMonth = insights?.previousMonth;
@@ -43,6 +75,8 @@ const InsightsScreen = () => {
     // Sort by amount descending
     categoryData.sort((a, b) => b.total - a.total);
 
+    const styles = createStyles(colors);
+
     const renderProgressBar = (percentage, color) => (
         <View style={styles.progressBarContainer}>
             <View
@@ -57,9 +91,18 @@ const InsightsScreen = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Spending Insights</Text>
-                <Text style={styles.subtitle}>Understand where your money goes</Text>
+                <View>
+                    <Text style={styles.title}>Spending Insights</Text>
+                    <Text style={styles.subtitle}>Understand where your money goes</Text>
+                </View>
+                <TouchableOpacity
+                    style={styles.exportBtn}
+                    onPress={() => navigation.navigate('Export')}
+                >
+                    <Text style={styles.exportBtnText}>📊 Export</Text>
+                </TouchableOpacity>
             </View>
+
 
             <ScrollView
                 style={styles.content}
@@ -81,7 +124,7 @@ const InsightsScreen = () => {
                         <View style={styles.comparisonDivider} />
                         <View style={styles.comparisonItem}>
                             <Text style={styles.comparisonLabel}>Last Month</Text>
-                            <Text style={[styles.comparisonAmount, { color: '#888' }]}>
+                            <Text style={[styles.comparisonAmount, { color: colors.textSecondary }]}>
                                 ₹{(previousMonth?.total || 0).toLocaleString()}
                             </Text>
                         </View>
@@ -118,18 +161,26 @@ const InsightsScreen = () => {
                     <View style={styles.categoryBreakdown}>
                         {categoryData.length === 0 ? (
                             <View style={styles.emptyState}>
-                                <Text style={styles.emptyIcon}>📊</Text>
+                                <MaterialIcons name="pie-chart" size={48} color={colors.textMuted} />
                                 <Text style={styles.emptyText}>No spending data yet</Text>
                             </View>
                         ) : (
+
                             categoryData.map((cat, index) => (
-                                <View key={cat.id || index} style={styles.categoryRow}>
+                                <TouchableOpacity
+                                    key={cat.id || index}
+                                    style={styles.categoryRow}
+                                    onPress={() => handleCategoryPress(cat)}
+                                    activeOpacity={0.7}
+                                >
                                     <View style={styles.categoryInfo}>
-                                        <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                                        <View style={[styles.categoryIconContainer, { backgroundColor: cat.color + '20' }]}>
+                                            <MaterialIcons name={cat.icon} size={24} color={cat.color} />
+                                        </View>
                                         <View style={styles.categoryDetails}>
                                             <Text style={styles.categoryName}>{cat.label}</Text>
                                             <Text style={styles.categoryMeta}>
-                                                {cat.count} transaction{cat.count !== 1 ? 's' : ''}
+                                                {cat.count} transaction{cat.count !== 1 ? 's' : ''} • Tap to view
                                             </Text>
                                         </View>
                                     </View>
@@ -140,7 +191,7 @@ const InsightsScreen = () => {
                                         <Text style={styles.categoryPercentage}>{cat.percentage}%</Text>
                                     </View>
                                     {renderProgressBar(cat.percentage, cat.color)}
-                                </View>
+                                </TouchableOpacity>
                             ))
                         )}
                     </View>
@@ -166,18 +217,72 @@ const InsightsScreen = () => {
                 )}
 
                 <View style={{ height: 100 }} />
+
             </ScrollView>
-        </View>
+
+            {/* Category Transactions Modal */}
+            <Modal
+                visible={modalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+                    <View style={styles.modalHeader}>
+                        <View style={styles.modalHeaderContent}>
+                            {selectedCategory && (
+                                <View style={[styles.modalIcon, { backgroundColor: selectedCategory.color + '20' }]}>
+                                    <MaterialIcons name={selectedCategory.icon} size={24} color={selectedCategory.color} />
+                                </View>
+                            )}
+                            <View>
+                                <Text style={styles.modalTitle}>{selectedCategory?.label} Expenses</Text>
+                                <Text style={styles.modalSubtitle}>This Month</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => setModalVisible(false)}
+                            style={styles.closeBtn}
+                        >
+                            <MaterialIcons name="close" size={24} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <FlatList
+                        data={filteredExpenses}
+                        keyExtractor={item => item._id}
+                        renderItem={({ item }) => (
+                            <ExpenseCard
+                                expense={item}
+                                onPress={() => {
+                                    setModalVisible(false);
+                                    navigation.navigate('AddExpense', { expense: item });
+                                }}
+                            />
+                        )}
+                        contentContainerStyle={styles.listContent}
+                        ListEmptyComponent={
+                            <View style={styles.emptyList}>
+                                <Text style={styles.emptyListText}>No transactions found</Text>
+                            </View>
+                        }
+                    />
+                </View>
+            </Modal>
+        </View >
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: '#1a1a2e',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.header,
         paddingTop: 60,
         paddingBottom: 24,
         paddingHorizontal: 20,
@@ -185,18 +290,30 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
     },
     subtitle: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
         marginTop: 4,
+    },
+    exportBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    exportBtnText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     content: {
         flex: 1,
     },
+
     comparisonCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         margin: 16,
         borderRadius: 16,
         padding: 20,
@@ -216,33 +333,33 @@ const styles = StyleSheet.create({
     },
     comparisonDivider: {
         width: 1,
-        backgroundColor: '#eee',
+        backgroundColor: colors.border,
         marginHorizontal: 16,
     },
     comparisonLabel: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
         marginBottom: 8,
     },
     comparisonAmount: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     changeIndicator: {
         alignItems: 'center',
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#eee',
+        borderTopColor: colors.border,
     },
     changeUp: {
-        color: '#e74c3c',
+        color: colors.danger,
         fontSize: 14,
         fontWeight: '600',
     },
     changeDown: {
-        color: '#27ae60',
+        color: colors.success,
         fontSize: 14,
         fontWeight: '600',
     },
@@ -252,12 +369,12 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         paddingHorizontal: 20,
         marginBottom: 12,
     },
     categoryBreakdown: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         marginHorizontal: 16,
         borderRadius: 16,
         padding: 16,
@@ -274,17 +391,25 @@ const styles = StyleSheet.create({
         fontSize: 28,
         marginRight: 12,
     },
+    categoryIconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
     categoryDetails: {
         flex: 1,
     },
     categoryName: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     categoryMeta: {
         fontSize: 12,
-        color: '#888',
+        color: colors.textSecondary,
     },
     categoryStats: {
         position: 'absolute',
@@ -295,15 +420,15 @@ const styles = StyleSheet.create({
     categoryAmount: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     categoryPercentage: {
         fontSize: 12,
-        color: '#888',
+        color: colors.textSecondary,
     },
     progressBarContainer: {
         height: 6,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 3,
         overflow: 'hidden',
     },
@@ -312,7 +437,7 @@ const styles = StyleSheet.create({
         borderRadius: 3,
     },
     pieChartContainer: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         marginHorizontal: 16,
         borderRadius: 16,
         padding: 20,
@@ -335,7 +460,7 @@ const styles = StyleSheet.create({
     },
     legendText: {
         fontSize: 13,
-        color: '#666',
+        color: colors.textSecondary,
     },
     emptyState: {
         alignItems: 'center',
@@ -347,8 +472,56 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#888',
+        color: colors.textSecondary,
     },
+    modalContainer: {
+        flex: 1,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    modalHeaderContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    modalIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    modalSubtitle: {
+        fontSize: 12,
+        color: colors.textSecondary,
+    },
+    closeBtn: {
+        padding: 8,
+        backgroundColor: colors.surfaceVariant,
+        borderRadius: 20,
+    },
+    listContent: {
+        paddingVertical: 12,
+    },
+    emptyList: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyListText: {
+        color: colors.textSecondary,
+    }
 });
 
 export default InsightsScreen;
+

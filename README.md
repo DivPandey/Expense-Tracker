@@ -1,6 +1,6 @@
 # PocketExpense+ 💰
 
-A full-stack expense tracking mobile application with intelligent spending insights, offline support, and budget management.
+A full-stack expense tracking mobile application with intelligent spending insights, offline support, budget management, and social finance features.
 
 ## 📱 Screenshots
 
@@ -15,9 +15,13 @@ A full-stack expense tracking mobile application with intelligent spending insig
 - **Smart Insights** - AI-powered spending analysis ("You spent 20% more on Food this month")
 - **Offline Support** - Works without internet, syncs when connected
 
-### Bonus Features
-- **Budget Limits** - Set monthly limits per category
-- **Push Notifications** - Alerts when approaching/exceeding budget
+### 🚀 Advanced Features
+- **Financial Goals** - Create saving goals (e.g., "New Laptop"), track progress, and contribute funds.
+- **Group Expenses (Social Finance)** - Split bills with friends (Equal, Exact, Percentage), track balances, and settle debts. Similar to Splitwise.
+- **Data Export** - Export your expense reports in CSV and PDF formats with custom date ranges and category filters.
+- **Smart Templates** - Save frequently added expenses as templates for quick one-tap entry.
+- **Budget Limits** - Set monthly limits per category with visual progress bars.
+- **Push Notifications** - Alerts for budget warnings, group payment reminders, and goal achievements.
 
 ## 🛠️ Tech Stack
 
@@ -28,7 +32,8 @@ A full-stack expense tracking mobile application with intelligent spending insig
 | State Management | React Context API |
 | Backend | Node.js + Express |
 | Database | MongoDB (Atlas) |
-| Authentication | JWT |
+| Authentication | JWT (JSON Web Tokens) |
+| File Generation | PDFKit, JSON2CSV |
 | Local Storage | AsyncStorage |
 
 ## 📁 Project Structure
@@ -36,19 +41,19 @@ A full-stack expense tracking mobile application with intelligent spending insig
 ```
 ├── backend/
 │   ├── config/         # Database configuration
-│   ├── middleware/     # JWT authentication
-│   ├── models/         # Mongoose schemas
-│   ├── routes/         # API routes
-│   └── server.js       # Express app
+│   ├── middleware/     # Auth & Error handling
+│   ├── models/         # Mongoose schemas (User, Expense, Goal, Group, etc.)
+│   ├── routes/         # API routes (Auth, Expenses, Goals, Groups, Exports)
+│   └── server.js       # Entry point
 │
 └── frontend/
     └── src/
-        ├── api/        # Axios configuration
-        ├── components/ # Reusable UI components
-        ├── context/    # Auth & Expense state
-        ├── navigation/ # App navigation
-        ├── screens/    # App screens
-        └── utils/      # Storage & notifications
+        ├── api/        # Axios setup & endpoints
+        ├── components/ # Reusable UI (Cards, Charts, Input Fields)
+        ├── context/    # Global state (Auth, Expense, Theme)
+        ├── navigation/ # App navigation setup
+        ├── screens/    # Main application screens
+        └── utils/      # Helpers, formatters & constants
 ```
 
 ## 🚀 Getting Started
@@ -56,8 +61,8 @@ A full-stack expense tracking mobile application with intelligent spending insig
 ### Prerequisites
 - Node.js (v18+)
 - npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
-- MongoDB Atlas account (free)
+- Expo CLI
+- MongoDB Atlas account (free tier works)
 
 ### Backend Setup
 
@@ -68,10 +73,10 @@ cd backend
 # Install dependencies
 npm install
 
-# Create .env file (copy from .env.example)
+# Create .env file
 cp .env.example .env
 
-# Update .env with your MongoDB URI and JWT secret
+# Update .env with your credentials
 # MONGODB_URI=mongodb+srv://...
 # JWT_SECRET=your_secret_key
 
@@ -88,7 +93,7 @@ cd frontend
 # Install dependencies
 npm install
 
-# Update API URL in src/api/axios.js with your computer's IP
+# Update API URL in src/api/axios.js
 # const API_URL = 'http://YOUR_IP:5000/api';
 
 # Start Expo
@@ -96,23 +101,52 @@ npx expo start
 ```
 
 ### Running on Device
-1. Install **Expo Go** app on your phone
-2. Scan QR code from terminal
+1. Install **Expo Go** app on your phone (Android/iOS)
+2. Scan the QR code displayed in the terminal
 3. App will load on your device
 
 ## 📡 API Endpoints
 
+### Auth
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/login` | Login user |
-| GET | `/api/expenses` | Get expenses |
-| POST | `/api/expenses` | Add expense |
-| PUT | `/api/expenses/:id` | Update expense |
-| DELETE | `/api/expenses/:id` | Delete expense |
-| GET | `/api/expenses/insights` | Get spending insights |
-| GET | `/api/budgets` | Get budgets |
-| POST | `/api/budgets` | Set budget |
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login user & get token |
+
+### Expenses
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/expenses` | Get all expenses |
+| POST | `/api/expenses` | Add new expense |
+| GET | `/api/expenses/insights` | Get spending analysis |
+
+### Goals 🎯
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/goals` | List all savings goals |
+| POST | `/api/goals` | Create a new goal |
+| POST | `/api/goals/:id/contribute` | Add funds to a goal |
+
+### Groups 👥
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/groups` | Create a new group |
+| POST | `/api/groups/join/:code` | Join group via code |
+| POST | `/api/groups/:id/expenses` | Add group expense (Split) |
+| GET | `/api/groups/:id/balances` | View who owes whom |
+| POST | `/api/groups/:id/settle` | Settle debts |
+
+### Exports 📄
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/exports/csv` | Download CSV report |
+| GET | `/api/exports/pdf` | Download PDF report |
+
+### Templates 📋
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/templates` | Get saved templates |
+| POST | `/api/templates/:id/use` | Create expense from template |
 
 ## 📋 Expense Categories
 - 🍔 Food
@@ -123,11 +157,5 @@ npx expo start
 - 💊 Health
 - 📦 Other
 
-## 🔔 Notifications
-- ⚠️ **Warning** at 80% budget usage
-- 🚨 **Alert** when budget exceeded
-- ✅ **Confirmation** when expense added
-
 ## 👨‍💻 Author
-
-Divyanshu
+**Divyanshu**

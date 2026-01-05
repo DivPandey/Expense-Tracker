@@ -6,19 +6,25 @@ import {
     ScrollView,
     TouchableOpacity,
     RefreshControl,
-    Dimensions
+    Dimensions,
+    Alert
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useExpenses } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import ExpenseCard from '../components/ExpenseCard';
 import InsightCard from '../components/InsightCard';
 import SyncIndicator from '../components/SyncIndicator';
+import NotificationBell from '../components/NotificationBell';
 import { CATEGORIES } from '../constants/categories';
+import api from '../api/axios';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
     const { user } = useAuth();
+    const { colors } = useTheme();
     const {
         expenses,
         insights,
@@ -31,11 +37,50 @@ const HomeScreen = ({ navigation }) => {
     } = useExpenses();
 
     const [refreshing, setRefreshing] = useState(false);
+    const [frequentTemplates, setFrequentTemplates] = useState([]);
+
+    useEffect(() => {
+        fetchFrequentTemplates();
+    }, []);
+
+    const fetchFrequentTemplates = async () => {
+        try {
+            const response = await api.get('/templates/frequent');
+            setFrequentTemplates(response.data);
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+        }
+    };
+
+    const handleQuickAdd = async (template) => {
+        Alert.alert(
+            'Quick Add',
+            `Add ₹${template.amount} for ${template.name}?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Add',
+                    onPress: async () => {
+                        try {
+                            await api.post(`/templates/${template._id}/use`);
+                            await fetchExpenses();
+                            await fetchInsights();
+                            await fetchFrequentTemplates();
+                            Alert.alert('Success', 'Expense added!');
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to add expense');
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await fetchExpenses();
         await fetchInsights();
+        await fetchFrequentTemplates();
         setRefreshing(false);
     }, []);
 
@@ -53,6 +98,8 @@ const HomeScreen = ({ navigation }) => {
 
     const monthTotal = insights?.currentMonth?.total || 0;
 
+    const styles = createStyles(colors);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -66,12 +113,15 @@ const HomeScreen = ({ navigation }) => {
                         })}
                     </Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => navigation.navigate('AddExpense')}
-                >
-                    <Text style={styles.addButtonText}>+ Add</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <NotificationBell navigation={navigation} />
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => navigation.navigate('AddExpense')}
+                    >
+                        <Text style={styles.addButtonText}>+ Add</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -86,6 +136,35 @@ const HomeScreen = ({ navigation }) => {
                     pendingCount={pendingCount}
                     onSync={handleSync}
                 />
+
+                {/* Quick Add Templates */}
+                {frequentTemplates.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Quick Add</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('Templates')}>
+                                <Text style={styles.seeAll}>View All</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {frequentTemplates.map((template) => {
+                                const categoryInfo = CATEGORIES.find(c => c.id === template.category) || CATEGORIES[6];
+                                return (
+                                    <TouchableOpacity
+                                        key={template._id}
+                                        style={[styles.quickAddCard, { borderColor: categoryInfo.color }]}
+                                        onPress={() => handleQuickAdd(template)}
+                                    >
+                                        <MaterialIcons name={template.icon || categoryInfo.icon} size={28} color={categoryInfo.color} />
+                                        <Text style={styles.quickAddName} numberOfLines={1}>{template.name}</Text>
+                                        <Text style={styles.quickAddAmount}>₹{template.amount}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                )}
+
 
                 {/* Summary Cards */}
                 <View style={styles.summaryContainer}>
@@ -110,7 +189,7 @@ const HomeScreen = ({ navigation }) => {
                                     key={cat._id || index}
                                     style={[styles.categoryCard, { borderColor: categoryInfo.color }]}
                                 >
-                                    <Text style={styles.categoryIcon}>{categoryInfo.icon}</Text>
+                                    <MaterialIcons name={categoryInfo.icon} size={32} color={categoryInfo.color} />
                                     <Text style={styles.categoryName}>{cat._id}</Text>
                                     <Text style={styles.categoryAmount}>₹{cat.total.toLocaleString()}</Text>
                                 </View>
@@ -140,7 +219,7 @@ const HomeScreen = ({ navigation }) => {
 
                     {recentExpenses.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyIcon}>📝</Text>
+                            <MaterialIcons name="receipt-long" size={48} color={colors.textMuted} />
                             <Text style={styles.emptyText}>No expenses yet</Text>
                             <Text style={styles.emptySubtext}>Tap + Add to record your first expense</Text>
                         </View>
@@ -161,16 +240,16 @@ const HomeScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
         paddingTop: 60,
         paddingBottom: 24,
         paddingHorizontal: 20,
@@ -180,15 +259,15 @@ const styles = StyleSheet.create({
     greeting: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
     },
     date: {
         fontSize: 14,
-        color: '#aaa',
+        color: colors.textSecondary,
         marginTop: 4,
     },
     addButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 12,
@@ -214,10 +293,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 6,
     },
     todayCard: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
     },
     monthCard: {
-        backgroundColor: '#2196F3',
+        backgroundColor: colors.secondary,
     },
     summaryLabel: {
         fontSize: 14,
@@ -242,17 +321,17 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         paddingHorizontal: 20,
         marginBottom: 12,
     },
     seeAll: {
         fontSize: 14,
-        color: '#4CAF50',
+        color: colors.primary,
         fontWeight: '500',
     },
     categoryCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         padding: 16,
         borderRadius: 12,
         marginLeft: 16,
@@ -266,19 +345,19 @@ const styles = StyleSheet.create({
     },
     categoryName: {
         fontSize: 12,
-        color: '#666',
+        color: colors.textSecondary,
         marginBottom: 4,
     },
     categoryAmount: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     emptyState: {
         alignItems: 'center',
         paddingVertical: 40,
         marginHorizontal: 20,
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderRadius: 16,
     },
     emptyIcon: {
@@ -288,13 +367,39 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         marginBottom: 4,
     },
     emptySubtext: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
+    },
+    quickAddCard: {
+        backgroundColor: colors.surface,
+        padding: 16,
+        borderRadius: 12,
+        marginLeft: 16,
+        width: 110,
+        alignItems: 'center',
+        borderWidth: 2,
+    },
+    quickAddIcon: {
+        fontSize: 28,
+        marginBottom: 8,
+    },
+    quickAddName: {
+        fontSize: 12,
+        color: colors.text,
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    quickAddAmount: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: colors.primary,
     },
 });
 
 export default HomeScreen;
+
+

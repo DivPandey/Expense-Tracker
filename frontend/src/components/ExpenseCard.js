@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { getCategoryById, getPaymentMethodById } from '../constants/categories';
+import { useTheme } from '../context/ThemeContext';
 
 const ExpenseCard = ({ expense, onPress, onDelete }) => {
+    const { colors } = useTheme();
     const category = getCategoryById(expense.category);
     const paymentMethod = getPaymentMethodById(expense.paymentMethod);
     const date = new Date(expense.date);
@@ -15,14 +18,16 @@ const ExpenseCard = ({ expense, onPress, onDelete }) => {
         });
     };
 
+    const styles = createStyles(colors);
+
     return (
         <TouchableOpacity
             style={[styles.card, { borderLeftColor: category.color }]}
             onPress={() => onPress && onPress(expense)}
             activeOpacity={0.7}
         >
-            <View style={styles.iconContainer}>
-                <Text style={styles.icon}>{category.icon}</Text>
+            <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
+                <MaterialIcons name={category.icon} size={24} color={category.color} />
             </View>
 
             <View style={styles.content}>
@@ -38,9 +43,10 @@ const ExpenseCard = ({ expense, onPress, onDelete }) => {
                 </View>
 
                 <View style={styles.row}>
-                    <Text style={styles.meta}>
-                        {paymentMethod.icon} {paymentMethod.label}
-                    </Text>
+                    <View style={styles.metaRow}>
+                        <MaterialIcons name={paymentMethod.icon} size={14} color={colors.textMuted} />
+                        <Text style={styles.meta}> {paymentMethod.label}</Text>
+                    </View>
                     <Text style={styles.date}>{formatDate(date)}</Text>
                 </View>
             </View>
@@ -50,17 +56,18 @@ const ExpenseCard = ({ expense, onPress, onDelete }) => {
                     style={styles.deleteBtn}
                     onPress={() => onDelete(expense._id)}
                 >
-                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                    <MaterialIcons name="delete-outline" size={20} color={colors.danger} />
                 </TouchableOpacity>
             )}
         </TouchableOpacity>
     );
 };
 
-const styles = StyleSheet.create({
+
+const createStyles = (colors) => StyleSheet.create({
     card: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderRadius: 12,
         padding: 16,
         marginHorizontal: 16,
@@ -76,7 +83,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -96,25 +103,29 @@ const styles = StyleSheet.create({
     category: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     amount: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#e74c3c',
+        color: colors.danger,
     },
     description: {
         fontSize: 14,
-        color: '#666',
+        color: colors.textSecondary,
         flex: 1,
     },
     meta: {
         fontSize: 12,
-        color: '#888',
+        color: colors.textMuted,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     date: {
         fontSize: 12,
-        color: '#888',
+        color: colors.textMuted,
     },
     deleteBtn: {
         justifyContent: 'center',
@@ -126,3 +137,4 @@ const styles = StyleSheet.create({
 });
 
 export default ExpenseCard;
+

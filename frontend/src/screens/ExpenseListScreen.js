@@ -6,14 +6,18 @@ import {
     FlatList,
     TouchableOpacity,
     RefreshControl,
-    Alert
+    Alert,
+    ScrollView
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useExpenses } from '../context/ExpenseContext';
+import { useTheme } from '../context/ThemeContext';
 import ExpenseCard from '../components/ExpenseCard';
 import { CATEGORIES } from '../constants/categories';
 
 const ExpenseListScreen = ({ navigation }) => {
     const { expenses, loading, fetchExpenses, deleteExpense } = useExpenses();
+    const { colors } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [viewMode, setViewMode] = useState('all'); // 'all', 'daily', 'monthly'
@@ -91,9 +95,10 @@ const ExpenseListScreen = ({ navigation }) => {
     };
 
     const filteredExpenses = getFilteredExpenses();
+    const styles = createStyles(colors);
 
     const renderViewModeButtons = () => (
-        <View style={styles.viewModeContainer}>
+        <View style={styles.viewModeSection}>
             {['all', 'daily', 'monthly'].map(mode => (
                 <TouchableOpacity
                     key={mode}
@@ -115,36 +120,56 @@ const ExpenseListScreen = ({ navigation }) => {
     );
 
     const renderCategoryFilter = () => (
-        <View style={styles.categoryFilter}>
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryFilter}
+            contentContainerStyle={styles.categoryFilterContent}
+        >
             <TouchableOpacity
                 style={[
                     styles.categoryChip,
-                    !selectedCategory && styles.categoryChipActive
+                    !selectedCategory && styles.categoryChipActive,
+                    !selectedCategory && { backgroundColor: colors.primary }
                 ]}
                 onPress={() => setSelectedCategory(null)}
             >
+                <MaterialIcons
+                    name="apps"
+                    size={18}
+                    color={!selectedCategory ? '#fff' : colors.textSecondary}
+                />
                 <Text style={[
                     styles.categoryChipText,
                     !selectedCategory && styles.categoryChipTextActive
                 ]}>All</Text>
             </TouchableOpacity>
-            {CATEGORIES.map(cat => (
-                <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                        styles.categoryChip,
-                        selectedCategory === cat.id && { backgroundColor: cat.color, borderColor: cat.color }
-                    ]}
-                    onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                >
-                    <Text style={[
-                        styles.categoryChipText,
-                        selectedCategory === cat.id && styles.categoryChipTextActive
-                    ]}>{cat.icon}</Text>
-                </TouchableOpacity>
-            ))}
-        </View>
+            {CATEGORIES.map(cat => {
+                const isSelected = selectedCategory === cat.id;
+                return (
+                    <TouchableOpacity
+                        key={cat.id}
+                        style={[
+                            styles.categoryChip,
+                            isSelected && { backgroundColor: cat.color }
+                        ]}
+                        onPress={() => setSelectedCategory(isSelected ? null : cat.id)}
+                    >
+                        <MaterialIcons
+                            name={cat.icon}
+                            size={18}
+                            color={isSelected ? '#fff' : cat.color}
+                        />
+                        <Text style={[
+                            styles.categoryChipText,
+                            isSelected && styles.categoryChipTextActive
+                        ]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </ScrollView>
     );
+
 
     const renderGroupHeader = (title, total) => (
         <View style={styles.groupHeader}>
@@ -199,7 +224,7 @@ const ExpenseListScreen = ({ navigation }) => {
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyIcon}>📊</Text>
+                        <MaterialIcons name="bar-chart" size={48} color={colors.textMuted} />
                         <Text style={styles.emptyText}>No expenses found</Text>
                     </View>
                 }
@@ -208,104 +233,139 @@ const ExpenseListScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
         paddingTop: 60,
-        paddingBottom: 20,
+        paddingBottom: 24,
         paddingHorizontal: 20,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
     },
     count: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
         marginTop: 4,
     },
-    viewModeContainer: {
+    viewModeSection: {
         flexDirection: 'row',
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#fff',
+        paddingTop: 16,
+        paddingBottom: 8,
+        gap: 8,
     },
     viewModeBtn: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: 'center',
-        borderRadius: 8,
-        marginHorizontal: 4,
-        backgroundColor: '#f5f5f5',
+        borderRadius: 12,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     viewModeBtnActive: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
     },
     viewModeBtnText: {
         fontSize: 14,
-        color: '#666',
-        fontWeight: '500',
+        color: colors.textSecondary,
+        fontWeight: '600',
     },
     viewModeBtnTextActive: {
         color: '#fff',
+        fontWeight: '700',
     },
     categoryFilter: {
-        flexDirection: 'row',
-        paddingHorizontal: 12,
         paddingVertical: 8,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        paddingBottom: 12,
+    },
+    categoryFilterContent: {
+        paddingHorizontal: 16,
+        gap: 10,
     },
     categoryChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        marginHorizontal: 4,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        backgroundColor: '#fff',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 20,
+        backgroundColor: colors.surface,
+        minHeight: 38,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 2,
     },
     categoryChipActive: {
-        backgroundColor: '#4CAF50',
-        borderColor: '#4CAF50',
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 4,
     },
     categoryChipText: {
         fontSize: 14,
+        fontWeight: '600',
+        color: colors.textSecondary,
+        marginLeft: 5,
     },
     categoryChipTextActive: {
         color: '#fff',
+        fontWeight: '700',
     },
     listContent: {
-        paddingVertical: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 4,
     },
     groupHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 12,
-        backgroundColor: '#f0f0f0',
-        marginTop: 8,
+        paddingVertical: 16,
+        marginHorizontal: 12,
+        marginTop: 12,
+        marginBottom: 4,
+        backgroundColor: colors.surface,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
     },
     groupTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
     },
     groupTotal: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#4CAF50',
+        fontSize: 17,
+        fontWeight: '700',
+        color: colors.primary,
     },
     emptyState: {
         alignItems: 'center',
-        paddingVertical: 60,
+        justifyContent: 'center',
+        paddingVertical: 80,
+        paddingHorizontal: 40,
     },
     emptyIcon: {
         fontSize: 48,
@@ -313,8 +373,11 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 16,
-        color: '#888',
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: 12,
     },
 });
 
 export default ExpenseListScreen;
+

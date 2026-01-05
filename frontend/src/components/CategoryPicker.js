@@ -1,8 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { CATEGORIES } from '../constants/categories';
+import { useTheme } from '../context/ThemeContext';
 
 const CategoryPicker = ({ selected, onSelect }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+
     return (
         <View style={styles.container}>
             <Text style={styles.label}>Category</Text>
@@ -11,40 +16,49 @@ const CategoryPicker = ({ selected, onSelect }) => {
                 showsHorizontalScrollIndicator={false}
                 style={styles.scrollView}
             >
-                {CATEGORIES.map((category) => (
-                    <TouchableOpacity
-                        key={category.id}
-                        style={[
-                            styles.categoryItem,
-                            selected === category.id && {
-                                backgroundColor: category.color,
-                                borderColor: category.color
-                            }
-                        ]}
-                        onPress={() => onSelect(category.id)}
-                    >
-                        <Text style={styles.categoryIcon}>{category.icon}</Text>
-                        <Text style={[
-                            styles.categoryLabel,
-                            selected === category.id && styles.selectedLabel
-                        ]}>
-                            {category.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+                {CATEGORIES.map((category) => {
+                    const isSelected = selected === category.id;
+                    return (
+                        <TouchableOpacity
+                            key={category.id}
+                            style={[
+                                styles.categoryItem,
+                                isSelected && {
+                                    backgroundColor: category.color,
+                                    borderColor: category.color
+                                }
+                            ]}
+                            onPress={() => onSelect(category.id)}
+                        >
+                            <MaterialIcons
+                                name={category.icon}
+                                size={18}
+                                color={isSelected ? '#fff' : category.color}
+                                style={styles.categoryIcon}
+                            />
+                            <Text style={[
+                                styles.categoryLabel,
+                                isSelected && styles.selectedLabel
+                            ]}>
+                                {category.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
+
+const createStyles = (colors) => StyleSheet.create({
     container: {
         marginBottom: 16,
     },
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         marginBottom: 8,
     },
     scrollView: {
@@ -57,9 +71,9 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#ddd',
+        borderColor: colors.border,
         marginRight: 10,
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
     },
     categoryIcon: {
         fontSize: 18,
@@ -67,7 +81,7 @@ const styles = StyleSheet.create({
     },
     categoryLabel: {
         fontSize: 14,
-        color: '#333',
+        color: colors.text,
     },
     selectedLabel: {
         color: '#fff',
@@ -76,3 +90,4 @@ const styles = StyleSheet.create({
 });
 
 export default CategoryPicker;
+

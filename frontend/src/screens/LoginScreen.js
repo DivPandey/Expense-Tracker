@@ -11,9 +11,11 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const LoginScreen = ({ navigation }) => {
     const { login } = useAuth();
+    const { colors } = useTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,6 +35,8 @@ const LoginScreen = ({ navigation }) => {
         }
     };
 
+    const styles = createStyles(colors);
+
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -50,7 +54,7 @@ const LoginScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your email"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -64,7 +68,7 @@ const LoginScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
@@ -94,10 +98,10 @@ const LoginScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
     },
     header: {
         flex: 1,
@@ -112,16 +116,16 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#888',
+        color: colors.textSecondary,
     },
     form: {
         flex: 2,
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         padding: 32,
@@ -133,25 +137,25 @@ const styles = StyleSheet.create({
     inputLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         marginBottom: 8,
     },
     input: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
-        color: '#333',
+        color: colors.text,
     },
     button: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
         borderRadius: 12,
         padding: 18,
         alignItems: 'center',
         marginTop: 20,
     },
     buttonDisabled: {
-        backgroundColor: '#aaa',
+        backgroundColor: colors.textMuted,
     },
     buttonText: {
         color: '#fff',
@@ -164,14 +168,15 @@ const styles = StyleSheet.create({
         marginTop: 24,
     },
     footerText: {
-        color: '#666',
+        color: colors.textSecondary,
         fontSize: 14,
     },
     linkText: {
-        color: '#4CAF50',
+        color: colors.primary,
         fontSize: 14,
         fontWeight: '600',
     },
 });
 
 export default LoginScreen;
+

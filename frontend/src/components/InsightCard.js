@@ -1,32 +1,35 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 const InsightCard = ({ insight }) => {
+    const { colors, isDark } = useTheme();
+
     const getBackgroundColor = () => {
         switch (insight.type) {
             case 'success':
-                return '#d4edda';
+                return isDark ? '#155724' + '40' : '#d4edda';
             case 'warning':
-                return '#fff3cd';
+                return isDark ? '#856404' + '40' : '#fff3cd';
             case 'danger':
-                return '#f8d7da';
+                return isDark ? '#721c24' + '40' : '#f8d7da';
             case 'info':
             default:
-                return '#cce5ff';
+                return isDark ? '#004085' + '40' : '#cce5ff';
         }
     };
 
     const getTextColor = () => {
         switch (insight.type) {
             case 'success':
-                return '#155724';
+                return isDark ? '#75b798' : '#155724';
             case 'warning':
-                return '#856404';
+                return isDark ? '#ffda6a' : '#856404';
             case 'danger':
-                return '#721c24';
+                return isDark ? '#ea868f' : '#721c24';
             case 'info':
             default:
-                return '#004085';
+                return isDark ? '#6ea8fe' : '#004085';
         }
     };
 
@@ -91,3 +94,4 @@ const styles = StyleSheet.create({
 });
 
 export default InsightCard;
+

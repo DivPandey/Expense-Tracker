@@ -19,6 +19,13 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/expenses', require('./routes/expenses'));
 app.use('/api/budgets', require('./routes/budgets'));
+app.use('/api/templates', require('./routes/templates'));
+app.use('/api/exports', require('./routes/exports'));
+app.use('/api/goals', require('./routes/goals'));
+app.use('/api/groups', require('./routes/groups'));
+app.use('/api/notifications', require('./routes/notifications'));
+
+
 
 // Health check
 app.get('/api/health', (req, res) => {

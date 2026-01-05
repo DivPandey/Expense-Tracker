@@ -12,9 +12,11 @@ import {
     ScrollView
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const RegisterScreen = ({ navigation }) => {
     const { register } = useAuth();
+    const { colors } = useTheme();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -46,6 +48,8 @@ const RegisterScreen = ({ navigation }) => {
         }
     };
 
+    const styles = createStyles(colors);
+
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -63,7 +67,7 @@ const RegisterScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your name"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={name}
                         onChangeText={setName}
                         autoCapitalize="words"
@@ -75,7 +79,7 @@ const RegisterScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Enter your email"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
@@ -89,7 +93,7 @@ const RegisterScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Create a password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
@@ -101,7 +105,7 @@ const RegisterScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Confirm your password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textMuted}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry
@@ -131,10 +135,10 @@ const RegisterScreen = ({ navigation }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1a1a2e',
+        backgroundColor: colors.header,
     },
     header: {
         justifyContent: 'center',
@@ -149,16 +153,16 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#fff',
+        color: colors.headerText,
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 14,
-        color: '#888',
+        color: colors.textSecondary,
     },
     form: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.surface,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
         padding: 32,
@@ -170,25 +174,25 @@ const styles = StyleSheet.create({
     inputLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1a1a2e',
+        color: colors.text,
         marginBottom: 8,
     },
     input: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 12,
         padding: 16,
         fontSize: 16,
-        color: '#333',
+        color: colors.text,
     },
     button: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.primary,
         borderRadius: 12,
         padding: 18,
         alignItems: 'center',
         marginTop: 16,
     },
     buttonDisabled: {
-        backgroundColor: '#aaa',
+        backgroundColor: colors.textMuted,
     },
     buttonText: {
         color: '#fff',
@@ -202,14 +206,15 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     footerText: {
-        color: '#666',
+        color: colors.textSecondary,
         fontSize: 14,
     },
     linkText: {
-        color: '#4CAF50',
+        color: colors.primary,
         fontSize: 14,
         fontWeight: '600',
     },
 });
 
 export default RegisterScreen;
+
